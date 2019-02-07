@@ -4,13 +4,13 @@
 export TF_CPP_MIN_LOG_LEVEL=1
 
 # get weights / mean cube
-bash models/get_weights_and_mean.sh
+# bash modelsget_weights_and_mean.sh
 
 # get sports1mil labels
-bash sports1m/get_labels.sh
+# bash sports1m/get_labels.sh
 
 # get caffe.proto from facebook/C3D repo (thanks to Du Tran)
-wget -N https://raw.githubusercontent.com/facebook/C3D/master/C3D-v1.0/src/caffe/proto/caffe.proto
+# wget -N https://raw.githubusercontent.com/facebook/C3D/master/C3D-v1.0/src/caffe/proto/caffe.proto
 
 # protobuf combile caffe.proto
 if [ "$(which protoc 2> /dev/null)" ]; then
@@ -35,10 +35,13 @@ fi
 python convert_caffe_model.py
 
 # download test video (basketball clip)
-bash download_test_video.sh
+# bash download_test_video.sh
 
 # run classification on this video
-python test_model.py
+#python test_model.py
+
+# preprocess videos
+python preprocess_videos.py
 
 echo "---------------------------------------------------"
 echo "You should have something close to the following:"

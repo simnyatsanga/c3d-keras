@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use('Agg')
 from keras.models import model_from_json
 import os
+import copy
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -153,7 +154,7 @@ def main():
     print('Total labels: {}'.format(len(labels)))
 
     print("[Info] Loading a sample video...")
-    cap = cv2.VideoCapture('dM06AMFLsrc.mp4')
+    cap = cv2.VideoCapture('tBozgYVgeDE.mp4')
 
     vid = []
     while True:

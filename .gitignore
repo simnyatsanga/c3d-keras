@@ -1,0 +1,8 @@
+test_videos/
+data/
+models/
+sports1m/
+*.png
+*.pyc
+*.proto
+caffe_pb2.py
