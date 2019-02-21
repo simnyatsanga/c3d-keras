@@ -4,7 +4,7 @@
 export TF_CPP_MIN_LOG_LEVEL=1
 
 # get weights / mean cube
-# bash modelsget_weights_and_mean.sh
+# bash models/get_weights_and_mean.sh
 
 # get sports1mil labels
 # bash sports1m/get_labels.sh
@@ -41,7 +41,7 @@ python convert_caffe_model.py
 #python test_model.py
 
 # preprocess videos
-python preprocess_videos.py
+# python preprocess_videos.py
 
 echo "---------------------------------------------------"
 echo "You should have something close to the following:"

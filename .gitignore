@@ -6,3 +6,6 @@ sports1m/
 *.pyc
 *.proto
 caffe_pb2.py
+*.h5
+*.json
+*.pkl

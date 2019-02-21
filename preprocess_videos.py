@@ -5,6 +5,9 @@ import copy
 import cv2
 import numpy as np
 import sys
+import glob
+from pickle import dump
+from pickle import load
 import c3d_model
 from keras.models import Model
 from keras.models import model_from_json
@@ -12,8 +15,8 @@ from keras.models import model_from_json
 from keras.layers.merge import add
 import keras.backend as K
 dim_ordering = K.image_dim_ordering()
-print "[Info] image_dim_order (from default ~/.keras/keras.json)={}".format(
-        dim_ordering)
+print ("[Info] image_dim_order (from default ~/.keras/keras.json)={}".format(
+        dim_ordering))
 backend = dim_ordering
 
 def load_pretrained_c3d():
@@ -28,7 +31,7 @@ def load_pretrained_c3d():
             backend = 'tf'
         else:
             backend = 'th'
-    print "[Info] Using backend={}".format(backend)
+    print ("[Info] Using backend={}".format(backend))
 
     if backend == 'th':
         model_weight_filename = os.path.join(model_dir, 'sports1M_weights_th.h5')
@@ -56,14 +59,15 @@ def load_pretrained_c3d():
 
 
 def extract_video_features(model):
-    sample_videos = ['tBozgYVgeDE.mp4', 'TKEbws4QhEk.mp4', 'dM06AMFLsrc.mp4', 'CUujE52na_c.mp4']
+    # sample_videos = ['tBozgYVgeDE.mp4', 'TKEbws4QhEk.mp4', 'dM06AMFLsrc.mp4', 'CUujE52na_c.mp4']
     # sample_videos = ['tBozgYVgeDE.mp4']
+    videos = [vid for vid in glob.glob('data/videos/*')]
     video_features = {}
 
     model.layers.pop()
     model = Model(inputs=model.inputs, outputs=model.layers[-3].output)
 
-    for video in sample_videos:
+    for video in videos:
         print("[Info] Processing sample video %s ..." % (video))
         cap = cv2.VideoCapture(video)
         vid = []
@@ -77,7 +81,7 @@ def extract_video_features(model):
 
         # sample 16-frame clip
         #start_frame = 100
-        start_frame = 2000
+        start_frame = 0
         X = vid[start_frame:(start_frame + 16), :, :, :]
         # subtract mean
         mean_cube = np.load('models/train01_16_128_171_mean.npy')
@@ -97,19 +101,21 @@ def extract_video_features(model):
         # extraction yields a (1, 4096) shaped vector so need to collapse to a 1D (4096,) vector
         video_feature = model.predict_on_batch(np.array([X]))
         video_feature = np.squeeze(video_feature)
-        video_features[video] = video_feature
+        video_features[video.split("/")[-1].split(".")[0]] = video_feature
     return video_features
-
 
 
 def main():
     model = load_pretrained_c3d()
+    print("[Info] Extraction video features...")
     video_features = extract_video_features(model)
-    import ipdb; ipdb.set_trace()
+    print("[Info] Extracted features %s ..." % (len(video_features)))
+    dump(video_features, open('video_features.pkl', 'wb'))
     print("[Info] Loading labels...")
     with open('sports1m/labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
     print('Total labels: {}'.format(len(labels)))
+
 
 if __name__ == '__main__':
     main()

@@ -1,15 +1,17 @@
-from keras.models import Model
 from keras.models import model_from_json
-from keras.layers.core import Dense, Dropout, LSTM, Input, Embedding
+from keras.utils import plot_model
+from keras.models import Model
+from keras.layers import Input
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import Embedding
+from keras.layers import Dropout
 from keras.layers.merge import add
+
 import c3d_model
 
-def extract_video_feature():
-	model = c3d_model.get_model(backend=backend)
-	import ipdb; ipdb.set_trace()
-
 #define the captioning model
-def get_captioning_model(vocab_size, max_length):
+def get_model(vocab_size, max_length):
 	# feature extractor model
 	inputs_from_c3d = Input(shape=(4096,))
 	fe1 = Dropout(0.5)(inputs_from_c3d)
