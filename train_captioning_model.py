@@ -1,6 +1,8 @@
 import json
 import argparse
 import random
+import time
+import cv2
 import numpy as np
 from numpy import array
 from numpy import argmax
@@ -25,15 +27,33 @@ def load_pretrained_model(filename):
     return load_model(filename)
 
 def load_random_video_caption_pair(features):
-    # load test caption keys
-    test_captions = load_captions('test_captions.json')
-    test_caption_keys = list(test_captions.keys())
-    random.shuffle(test_caption_keys)
+    # load validation caption keys
+    validation_captions = load_captions('validation_captions.json')
+    validation_caption_keys = list(validation_captions.keys())
+    random.shuffle(validation_caption_keys)
     # choose a random key using a randomly generated index
-    random_key = test_caption_keys[random.randint(0,len(test_captions))]
-    captions = test_captions[random_key]
+    random_key = validation_caption_keys[random.randint(0,len(validation_caption_keys))]
+    captions = validation_captions[random_key]
     video = features[random_key]
     return random_key, video, captions
+
+def play_video(video_name):
+    cap = cv2.VideoCapture('data/videos/' + video_name + '.avi')
+    print("="*47)
+    print("Playing video named: %s" % (video_name + '.avi'))
+    print("="*47)
+    while(cap.isOpened()):
+        ret, frame = cap.read()
+        if not ret:
+            break
+        #  NOTE: The COLOR_BGR2GRAY transformation can be used to convert the color frame into gray-scale
+        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        time.sleep(0.025)
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cap.release()
+    cv2.destroyAllWindows()
 
 # map an integet to a word
 def word_for_id(integer, tokenizer):
@@ -150,13 +170,22 @@ def test(model, all_features, tokenizer, max_length):
     # max_length = 50
     # load one random video
     video_name, video, captions = load_random_video_caption_pair(all_features)
+
+    # play video
+    play_video(video_name)
+
     # generate description
     caption = generate_caption(model, tokenizer, video, max_length)
-    print("===============================================")
-    print('Generated caption: %s ----> %s \n' % (video_name, caption))
-    print("===============================================")
+    print("="*47)
+    print('Generated caption: %s \n' % (caption))
+    print("="*47)
 
-    print("Ground truth captions are: \n %s" % captions)
+    print("="*47)
+    print("Ground truth captions:")
+    for caption in captions:
+        print(caption)
+
+    print("="*47)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -168,6 +197,7 @@ if __name__ == '__main__':
 
     training_captions = load_captions('training_captions.json')
     test_captions = load_captions('test_captions.json')
+    validation_captions = load_captions('validation_captions.json')
     tokenizer = preprocess_captions.create_tokenizer(training_captions)
     vocab_size = preprocess_captions.summarize_vocab(tokenizer)
     max_length = preprocess_captions.get_max_length(training_captions)
@@ -179,8 +209,9 @@ if __name__ == '__main__':
         print('ALL SET FOR TRAINING ...')
         train(vocab_size, training_captions, all_features, tokenizer, max_length)
     elif args.op == 'evaluate':
+        # NOTE: Use validation set for fine-tuning and evaluation. Only use test set for final inference! - Willie Brink
         print('ALL SET FOR EVALUATING ...')
-        evaluate(pretrained_model, test_captions, all_features, tokenizer, max_length)
+        evaluate(pretrained_model, validation_captions, all_features, tokenizer, max_length)
     elif args.op == 'test':
         print('ALL SET FOR TESTING ...')
         test(pretrained_model, all_features, tokenizer, max_length)

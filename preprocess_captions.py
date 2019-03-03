@@ -6,9 +6,11 @@ import random
 import pandas as pd
 from keras.preprocessing.text import Tokenizer
 
-NUM_TRAIN = 1379
-NUM_VAL = 394
-NUM_TEST = 194
+# NOTE: There's a discrepancy between captions in the video_corpus.csv (found here: https://github.com/chenxinpeng/S2VT/blob/master/data/video_corpus.csv)
+# This is because some of the entries in the csv are for videos that aren't on Youtube anymore. So after filtering the available videos, the total = 1970 videos
+NUM_TRAIN = 1379 # 70% of total videos
+NUM_VAL = 394 # 30% of total videos
+NUM_TEST = 194 # 10% of total videos
 
 # select only captioned videos that are available
 # this is because some of the captioned videos are no longer available on youtube
@@ -110,36 +112,6 @@ def create_tokenizer(captions):
 def get_max_length(captions):
     captions_list = get_full_captions_list(captions)
     return max(len(caption.split()) for caption in captions_list)
-
-# def create_sequences(tokenizer, max_length, caption_list, video):
-#     X1, X2, y = list(), list(), list()
-#     # walk through each caption for the video
-#     for caption in caption_list:
-#     	# encode the sequence
-#     	seq = tokenizer.texts_to_sequences([caption])[0]
-#     	# split one sequence into multiple X,y pairs
-#     	for i in range(1, len(seq)):
-#     		# split into input and output pair
-#     		in_seq, out_seq = seq[:i], seq[i]
-#     		# pad input sequence
-#     		in_seq = pad_sequences([in_seq], maxlen=max_length)[0]
-#     		# encode output sequence
-#     		out_seq = to_categorical([out_seq], num_classes=vocab_size)[0]
-#     		# store
-#     		X1.append(video)
-#     		X2.append(in_seq)
-#     		y.append(out_seq)
-#     return array(X1), array(X2), array(y)
-
-# # data generator, intended to be used in a call to model.fit_generator()
-# def data_generator(captions, videos, tokenizer, max_length):
-# 	# loop for ever over videos
-# 	while 1:
-# 		for key, captions_list in captions.items():
-# 			# retrieve the video feature
-# 			video = videos[key]
-# 			in_video, in_seq, out_word = create_sequences(tokenizer, max_length, captions_list, video)
-# 			yield [[in_video, in_seq], out_word]
 
 def main():
     captions = get_captions_for_available_videos()
