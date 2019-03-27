@@ -39,7 +39,7 @@ def load_random_video_caption_pair(features):
     return random_key, video, captions
 
 def play_video(video_name):
-    cap = cv2.VideoCapture('data/videos/' + video_name + '.avi')
+    cap = cv2.VideoCapture('data/' + video_name + '.avi')
     print("="*47)
     print("Playing video named: %s" % (video_name + '.avi'))
     print("="*47)
