@@ -13,6 +13,7 @@ from nltk.translate.bleu_score import corpus_bleu
 from keras.utils import to_categorical
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
+from keras.callbacks import ModelCheckpoint
 
 
 def load_captions(input_file):
@@ -20,8 +21,8 @@ def load_captions(input_file):
         captions = json.loads(jsonfile.read())
     return captions
 
-def load_features():
-    return load(open('video_features.pkl', 'rb'))
+def load_features(filename):
+    return load(open(filename, 'rb'))
 
 def load_pretrained_model(filename):
     return load_model(filename)
@@ -121,21 +122,38 @@ def data_generator(captions, videos, tokenizer, max_length, vocab_size):
             in_video, in_seq, out_word = create_sequences(tokenizer, max_length, captions_list, video, vocab_size)
             yield [[in_video, in_seq], out_word]
 
-def train(vocab_size, training_captions, training_features, tokenizer, max_length):
+def train(vocab_size, training_captions, validation_captions, all_features, tokenizer, max_length):
     # define the model
     model = captioning_model.get_model(vocab_size, max_length)
 
+    # load checkpoint
+    # model = load_pretrained_model('weights-improvement-10-0.35.hdf5')
+
     # train the model, run epochs manually and save after each epoch
     epochs = 100
-    steps = len(training_captions)
-    for i in range(epochs):
-        print('Running epoch %d' %i)
+    training_steps = len(training_captions)
+    validation_steps = len(validation_captions)
+    # for i in range(epochs):
+        # print('Running epoch %d' %i)
         # create the data generator
-        generator = data_generator(training_captions, training_features, tokenizer, max_length, vocab_size)
-        # fit for one epoch
-        model.fit_generator(generator, epochs=1, steps_per_epoch=steps, verbose=1)
+    training_generator = data_generator(training_captions, all_features, tokenizer, max_length, vocab_size)
+    validation_generator = data_generator(validation_captions, all_features, tokenizer, max_length, vocab_size)
+
+    filepath="weights-improvement-stride_10-{epoch:02d}-{val_acc:.2f}.hdf5"
+    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    callbacks_list = [checkpoint]
+    # fit for one epoch
+    model.fit_generator(training_generator,
+                        epochs=100,
+                        steps_per_epoch=training_steps,
+                        validation_data=validation_generator,
+                        validation_steps=validation_steps,
+                        callbacks=callbacks_list,
+                        verbose=1)
+
+        # model.fit_generator(training_generator, epochs=1, steps_per_epoch=training_steps, verbose=1)
         # save model
-        model.save('model_' + str(i) + '.h5')
+        # model.save('model_stride_3_' + str(i) + '.h5')
 
 # evaluate the skill of the model
 def evaluate(model, captions, videos, tokenizer, max_length):
@@ -193,7 +211,12 @@ if __name__ == '__main__':
 
     # NOTE: We load features for all videos here, but the train/validation/test caption maps
     # will ensure to only select the allocated videos according the 70/20/10 split
-    all_features = load_features()
+    all_features_1 = load_features('video_features_first_16_frames.pkl')
+    all_features_2 = load_features('video_features_stride_2.pkl')
+    all_features_3 = load_features('video_features_stride_3.pkl')
+    all_features_4 = load_features('video_features_stride_4.pkl')
+    all_features_8 = load_features('video_features_stride_8.pkl')
+    all_features_10 = load_features('video_features_stride_10.pkl')
 
     training_captions = load_captions('training_captions.json')
     test_captions = load_captions('test_captions.json')
@@ -201,17 +224,38 @@ if __name__ == '__main__':
     tokenizer = preprocess_captions.create_tokenizer(training_captions)
     vocab_size = preprocess_captions.summarize_vocab(tokenizer)
     max_length = preprocess_captions.get_max_length(training_captions)
-    pretrained_model = load_pretrained_model('model_99.h5')
+    pretrained_model_1 = load_pretrained_model('model_checkpoints/model_99.h5')
+    pretrained_model_2 = load_pretrained_model('model_checkpoints/model_stride_2_99.h5')
+    pretrained_model_3 = load_pretrained_model('model_checkpoints/weights-improvement-stride_3-10-0.35.hdf5')
+    pretrained_model_4 = load_pretrained_model('model_checkpoints/weights-improvement-stride_4-17-0.35.hdf5')
+    pretrained_model_8 = load_pretrained_model('model_checkpoints/weights-improvement-stride_8-07-0.35.hdf5')
+    pretrained_model_10 = load_pretrained_model('model_checkpoints/weights-improvement-stride_10-21-0.35.hdf5')
 
     args = parser.parse_args()
 
     if args.op == 'train':
         print('ALL SET FOR TRAINING ...')
-        train(vocab_size, training_captions, all_features, tokenizer, max_length)
+        train(vocab_size, training_captions, validation_captions, all_features, tokenizer, max_length)
     elif args.op == 'evaluate':
         # NOTE: Use validation set for fine-tuning and evaluation. Only use test set for final inference! - Willie Brink
         print('ALL SET FOR EVALUATING ...')
-        evaluate(pretrained_model, validation_captions, all_features, tokenizer, max_length)
+        print('Stride 1')
+        evaluate(pretrained_model_1, validation_captions, all_features_1, tokenizer, max_length)
+        print("="*20)
+        print('Stride 2')
+        evaluate(pretrained_model_2, validation_captions, all_features_2, tokenizer, max_length)
+        print("="*20)
+        print('Stride 3')
+        evaluate(pretrained_model_3, validation_captions, all_features_3, tokenizer, max_length)
+        print("="*20)
+        print('Stride 4')
+        evaluate(pretrained_model_4, validation_captions, all_features_4, tokenizer, max_length)
+        print("="*20)
+        print('Stride 8')
+        evaluate(pretrained_model_8, validation_captions, all_features_8, tokenizer, max_length)
+        print("="*20)
+        print('Stride 10')
+        evaluate(pretrained_model_10, validation_captions, all_features_10, tokenizer, max_length)
     elif args.op == 'test':
         print('ALL SET FOR TESTING ...')
         test(pretrained_model, all_features, tokenizer, max_length)
