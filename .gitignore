@@ -6,4 +6,3 @@ sports1m/
 *.pyc
 *.proto
 caffe_pb2.py
-model_checkpoints/
