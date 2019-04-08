@@ -126,6 +126,14 @@ def extract_video_features(model, **kwargs):
                 idx += 10
             while len(X) < 16:
                 X.append(np.zeros((128, 171, 3)))
+        elif kwargs['extraction_strategy'] == 'stride_16':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 16
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
 
         X = np.array(X, dtype=np.float32)
 
@@ -159,6 +167,8 @@ def extract_video_features(model, **kwargs):
         dump(video_features, open('video_features_stride_8.pkl', 'wb'))
     elif  kwargs['extraction_strategy'] == 'stride_10':
         dump(video_features, open('video_features_stride_10.pkl', 'wb'))
+    elif  kwargs['extraction_strategy'] == 'stride_16':
+        dump(video_features, open('video_features_stride_16.pkl', 'wb'))
 
 
 def main(args):
