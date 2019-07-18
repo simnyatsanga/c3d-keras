@@ -10,7 +10,7 @@ from keras.layers.merge import add
 
 import c3d_model
 
-#define the captioning model
+# Define the captioning model
 def get_model(vocab_size, max_length):
 	# feature extractor model
 	inputs_from_c3d = Input(shape=(4096,))
