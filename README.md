@@ -1,8 +1,6 @@
 Video Captioning in Keras + TensorFlow
 ================================
 
-The scripts here are inspired by [`C3D Model for Keras`](https://gist.github.com/albertomontesg/d8b21a179c1e6cca0480ebdf292c34d2) gist, but specifically for Keras + TensorFlow (not Theano-backend).
-
 To reproduce results:
 
 - Instructions incoming ...
@@ -29,9 +27,4 @@ References
 1. [C3D Model for Keras](https://gist.github.com/albertomontesg/d8b21a179c1e6cca0480ebdf292c34d2)
 2. [Original C3D implementation in Caffe](https://github.com/facebook/C3D)
 3. [C3D paper](https://arxiv.org/abs/1412.0767)
-
-License
-=======
-
- * Source code: 2-clause BSD.
- * Data: various Creative Commons licenses. See [LICENSE.md](LICENSE.md) for details.
+4. [C3D Keras + TensorFlow code](https://github.com/axon-research/c3d-keras)
