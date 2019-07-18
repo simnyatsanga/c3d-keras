@@ -118,9 +118,9 @@ def main():
     mapped_captions = map_captions(captions)
     cleaned_captions = clean_captions(mapped_captions)
     training_captions, validation_captions, test_captions = split_captions(cleaned_captions)
-    save_captions(training_captions, 'training_captions.json')
-    save_captions(validation_captions, 'validation_captions.json')
-    save_captions(test_captions, 'test_captions.json')
+    save_captions(training_captions, 'captions/training_captions.json')
+    save_captions(validation_captions, 'captions/validation_captions.json')
+    save_captions(test_captions, 'captions/test_captions.json')
 
 
 if __name__ == '__main__':

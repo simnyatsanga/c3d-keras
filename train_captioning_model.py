@@ -29,7 +29,7 @@ def load_pretrained_model(filename):
 
 def load_random_video_caption_pair(features):
     # load validation caption keys
-    validation_captions = load_captions('validation_captions.json')
+    validation_captions = load_captions('captions/validation_captions.json')
     validation_caption_keys = list(validation_captions.keys())
     random.shuffle(validation_caption_keys)
     # choose a random key using a randomly generated index
@@ -188,7 +188,7 @@ def evaluate(model, captions, videos, tokenizer, max_length):
 
 # Play videos and generate captions using pre-selected videos
 def demo(model, all_features, tokenizer, max_length):
-    validation_captions = load_captions('validation_captions.json')
+    validation_captions = load_captions('captions/validation_captions.json')
     good_video_keys = ['6BrHPMdyVtU_1_10', '-_hbPLsZvvo_19_26', 'J_evFB7RIKA_104_120', 'Uc63MFVwfrs_355_372', 'aC-KOYQsIvU_25_31', 'Gn4Iv5ARIXc_83_93','0lh_UWF9ZP4_215_226', 'z2kUc8wp9l8_40_46']
     for key in good_video_keys:
         captions = validation_captions[key]
@@ -234,17 +234,17 @@ if __name__ == '__main__':
 
     # NOTE: We load features for all videos here, but the train/validation/test caption maps
     # will ensure to only select the allocated videos according the 70/20/10 split
-    all_features_1 = load_features('video_features_first_16_frames.pkl')
-    all_features_2 = load_features('video_features_stride_2.pkl')
-    all_features_3 = load_features('video_features_stride_3.pkl')
-    all_features_4 = load_features('video_features_stride_4.pkl')
-    all_features_8 = load_features('video_features_stride_8.pkl')
-    all_features_10 = load_features('video_features_stride_10.pkl')
-    all_features_16 = load_features('video_features_stride_16.pkl')
+    all_features_1 = load_features('video_features/video_features_first_16_frames.pkl')
+    all_features_2 = load_features('video_features/video_features_stride_2.pkl')
+    all_features_3 = load_features('video_features/video_features_stride_3.pkl')
+    all_features_4 = load_features('video_features/video_features_stride_4.pkl')
+    all_features_8 = load_features('video_features/video_features_stride_8.pkl')
+    all_features_10 = load_features('video_features/video_features_stride_10.pkl')
+    all_features_16 = load_features('video_features/video_features_stride_16.pkl')
 
-    training_captions = load_captions('training_captions.json')
-    test_captions = load_captions('test_captions.json')
-    validation_captions = load_captions('validation_captions.json')
+    training_captions = load_captions('captions/training_captions.json')
+    test_captions = load_captions('captions/test_captions.json')
+    validation_captions = load_captions('captions/validation_captions.json')
     tokenizer = preprocess_captions.create_tokenizer(training_captions)
     vocab_size = preprocess_captions.summarize_vocab(tokenizer)
     max_length = preprocess_captions.get_max_length(training_captions)

@@ -156,19 +156,19 @@ def extract_video_features(model, **kwargs):
         video_feature = np.squeeze(video_feature)
         video_features[video.split("/")[-1].split(".")[0]] = video_feature
     if kwargs['extraction_strategy'] == 'first_16':
-        dump(video_features, open('video_features_first_16.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_first_16.pkl', 'wb'))
     elif kwargs['extraction_strategy'] == 'stride_2':
-        dump(video_features, open('video_features_stride_2.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_stride_2.pkl', 'wb'))
     elif kwargs['extraction_strategy'] == 'stride_3':
-        dump(video_features, open('video_features_stride_3.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_stride_3.pkl', 'wb'))
     elif  kwargs['extraction_strategy'] == 'stride_4':
-        dump(video_features, open('video_features_stride_4.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_stride_4.pkl', 'wb'))
     elif  kwargs['extraction_strategy'] == 'stride_8':
-        dump(video_features, open('video_features_stride_8.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_stride_8.pkl', 'wb'))
     elif  kwargs['extraction_strategy'] == 'stride_10':
-        dump(video_features, open('video_features_stride_10.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_stride_10.pkl', 'wb'))
     elif  kwargs['extraction_strategy'] == 'stride_16':
-        dump(video_features, open('video_features_stride_16.pkl', 'wb'))
+        dump(video_features, open('video_features/video_features_stride_16.pkl', 'wb'))
 
 
 def main(args):
