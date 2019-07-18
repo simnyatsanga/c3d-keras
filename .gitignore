@@ -1,11 +1,11 @@
 test_videos/
 data/
 models/
+model_checkpoints/
 sports1m/
 *.png
 *.pyc
 *.proto
-caffe_pb2.py
-*.h5
-*.json
 *.pkl
+*.json
+caffe_pb2.py

@@ -3,9 +3,10 @@
 import os
 import copy
 import cv2
-import numpy as np
 import sys
 import glob
+import argparse
+import numpy as np
 from pickle import dump
 from pickle import load
 import c3d_model
@@ -24,13 +25,13 @@ def load_pretrained_c3d():
     diagnose_plots = False
     model_dir = './models'
     global backend
-
     # override backend if provided as an input arg
-    if len(sys.argv) > 1:
-        if 'tf' in sys.argv[1].lower():
-            backend = 'tf'
-        else:
-            backend = 'th'
+    # if len(sys.argv) > 1:
+    #     if 'tf' in sys.argv[1].lower():
+    #         backend = 'tf'
+    #     else:
+    #         backend = 'th'
+    backend = 'tf'
     print ("[Info] Using backend={}".format(backend))
 
     if backend == 'th':
@@ -58,7 +59,8 @@ def load_pretrained_c3d():
     return model
 
 
-def extract_video_features(model):
+def extract_video_features(model, **kwargs):
+    print("[Info] Extraction strategy... %s" % (kwargs['extraction_strategy']))
     # sample_videos = ['tBozgYVgeDE.mp4', 'TKEbws4QhEk.mp4', 'dM06AMFLsrc.mp4', 'CUujE52na_c.mp4']
     # sample_videos = ['tBozgYVgeDE.mp4']
     videos = [vid for vid in glob.glob('data/videos/*')]
@@ -81,12 +83,63 @@ def extract_video_features(model):
 
         # sample 16-frame clip
         #start_frame = 100
-        start_frame = 0
-        X = vid[start_frame:(start_frame + 16), :, :, :]
+        # start_frame = 0
+        if kwargs['extraction_strategy'] == 'first_16':
+            X = vid[start_frame:(0 + 16), :, :, :]
+        elif kwargs['extraction_strategy'] == 'stride_2':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 2
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
+        elif kwargs['extraction_strategy'] == 'stride_3':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 3
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
+        elif kwargs['extraction_strategy'] == 'stride_4':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 4
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
+        elif kwargs['extraction_strategy'] == 'stride_8':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 8
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
+        elif kwargs['extraction_strategy'] == 'stride_10':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 10
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
+        elif kwargs['extraction_strategy'] == 'stride_16':
+            X = []
+            idx = 0
+            while (idx < vid.shape[0]) and (len(X) < 16):
+                X.append(vid[idx, :, :, :])
+                idx += 16
+            while len(X) < 16:
+                X.append(np.zeros((128, 171, 3)))
+
+        X = np.array(X, dtype=np.float32)
+
         # subtract mean
         mean_cube = np.load('models/train01_16_128_171_mean.npy')
         mean_cube = np.transpose(mean_cube, (1, 2, 3, 0))
-
         X -= mean_cube
 
         # center crop
@@ -102,15 +155,26 @@ def extract_video_features(model):
         video_feature = model.predict_on_batch(np.array([X]))
         video_feature = np.squeeze(video_feature)
         video_features[video.split("/")[-1].split(".")[0]] = video_feature
-    return video_features
+    if kwargs['extraction_strategy'] == 'first_16':
+        dump(video_features, open('video_features/video_features_first_16.pkl', 'wb'))
+    elif kwargs['extraction_strategy'] == 'stride_2':
+        dump(video_features, open('video_features/video_features_stride_2.pkl', 'wb'))
+    elif kwargs['extraction_strategy'] == 'stride_3':
+        dump(video_features, open('video_features/video_features_stride_3.pkl', 'wb'))
+    elif  kwargs['extraction_strategy'] == 'stride_4':
+        dump(video_features, open('video_features/video_features_stride_4.pkl', 'wb'))
+    elif  kwargs['extraction_strategy'] == 'stride_8':
+        dump(video_features, open('video_features/video_features_stride_8.pkl', 'wb'))
+    elif  kwargs['extraction_strategy'] == 'stride_10':
+        dump(video_features, open('video_features/video_features_stride_10.pkl', 'wb'))
+    elif  kwargs['extraction_strategy'] == 'stride_16':
+        dump(video_features, open('video_features/video_features_stride_16.pkl', 'wb'))
 
 
-def main():
+def main(args):
     model = load_pretrained_c3d()
     print("[Info] Extraction video features...")
-    video_features = extract_video_features(model)
-    print("[Info] Extracted features %s ..." % (len(video_features)))
-    dump(video_features, open('video_features.pkl', 'wb'))
+    extract_video_features(model, extraction_strategy=args.extraction_strategy)
     print("[Info] Loading labels...")
     with open('sports1m/labels.txt', 'r') as f:
         labels = [line.strip() for line in f.readlines()]
@@ -118,4 +182,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--extraction_strategy', default='first_16')
+    args = parser.parse_args()
+    main(args)

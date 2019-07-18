@@ -3,7 +3,7 @@ Video Captioning in Keras + TensorFlow
 
 To reproduce results:
 
-- More instructions coming ...
+- Instructions incoming ...
 
 Prerequisites
 =============

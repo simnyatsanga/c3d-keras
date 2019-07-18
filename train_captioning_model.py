@@ -13,6 +13,7 @@ from nltk.translate.bleu_score import corpus_bleu
 from keras.utils import to_categorical
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
+from keras.callbacks import ModelCheckpoint
 
 
 def load_captions(input_file):
@@ -20,15 +21,15 @@ def load_captions(input_file):
         captions = json.loads(jsonfile.read())
     return captions
 
-def load_features():
-    return load(open('video_features.pkl', 'rb'))
+def load_features(filename):
+    return load(open(filename, 'rb'))
 
 def load_pretrained_model(filename):
     return load_model(filename)
 
 def load_random_video_caption_pair(features):
     # load validation caption keys
-    validation_captions = load_captions('validation_captions.json')
+    validation_captions = load_captions('captions/validation_captions.json')
     validation_caption_keys = list(validation_captions.keys())
     random.shuffle(validation_caption_keys)
     # choose a random key using a randomly generated index
@@ -38,9 +39,9 @@ def load_random_video_caption_pair(features):
     return random_key, video, captions
 
 def play_video(video_name):
-    cap = cv2.VideoCapture('data/videos/' + video_name + '.avi')
+    cap = cv2.VideoCapture(video_name)
     print("="*47)
-    print("Playing video named: %s" % (video_name + '.avi'))
+    print("Playing video named: %s" % (video_name))
     print("="*47)
     while(cap.isOpened()):
         ret, frame = cap.read()
@@ -55,7 +56,7 @@ def play_video(video_name):
     cap.release()
     cv2.destroyAllWindows()
 
-# map an integet to a word
+# Map an integer to a word
 def word_for_id(integer, tokenizer):
     for word, index in tokenizer.word_index.items():
         if index == integer:
@@ -82,7 +83,7 @@ def create_sequences(tokenizer, max_length, caption_list, video, vocab_size):
             y.append(out_seq)
     return array(X1), array(X2), array(y)
 
-# generate a description for a videp
+# Generate a description for a video
 def generate_caption(model, tokenizer, video, max_length):
     # HACK to make video look like (1, 4096). Will fix in preprocess_videos
     video = np.array([video])
@@ -111,7 +112,7 @@ def generate_caption(model, tokenizer, video, max_length):
             break
     return in_text
 
-# data generator, intended to be used in a call to model.fit_generator()
+# Data generator, intended to be used in a call to model.fit_generator()
 def data_generator(captions, videos, tokenizer, max_length, vocab_size):
     # loop for ever over videos
     while 1:
@@ -121,23 +122,45 @@ def data_generator(captions, videos, tokenizer, max_length, vocab_size):
             in_video, in_seq, out_word = create_sequences(tokenizer, max_length, captions_list, video, vocab_size)
             yield [[in_video, in_seq], out_word]
 
-def train(vocab_size, training_captions, training_features, tokenizer, max_length):
+def train(vocab_size, training_captions, validation_captions, all_features, tokenizer, max_length):
     # define the model
     model = captioning_model.get_model(vocab_size, max_length)
 
+    # load checkpoint
+    # model = load_pretrained_model('weights-improvement-10-0.35.hdf5')
+
     # train the model, run epochs manually and save after each epoch
     epochs = 100
-    steps = len(training_captions)
+    training_steps = len(training_captions)
+    validation_steps = len(validation_captions)
+
+    # Simple implementation of training loop that saves all models with no validation accuracy check
+    training_generator = data_generator(training_captions, all_features, tokenizer, max_length, vocab_size)
+
     for i in range(epochs):
         print('Running epoch %d' %i)
         # create the data generator
-        generator = data_generator(training_captions, training_features, tokenizer, max_length, vocab_size)
-        # fit for one epoch
-        model.fit_generator(generator, epochs=1, steps_per_epoch=steps, verbose=1)
+        model.fit_generator(training_generator, epochs=1, steps_per_epoch=training_steps, verbose=1)
         # save model
-        model.save('model_' + str(i) + '.h5')
+        model.save('model_stride_1_' + str(i) + '.h5')
 
-# evaluate the skill of the model
+    # Using training and validation generator so that the model is only saved if the validation accuracy improves
+    # training_generator = data_generator(training_captions, all_features, tokenizer, max_length, vocab_size)
+    # validation_generator = data_generator(validation_captions, all_features, tokenizer, max_length, vocab_size)
+    #
+    # filepath="weights-improvement-stride_16-{epoch:02d}-{val_acc:.2f}.hdf5"
+    # checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    # callbacks_list = [checkpoint]
+    # # fit for one epoch
+    # model.fit_generator(training_generator,
+    #                     epochs=100,
+    #                     steps_per_epoch=training_steps,
+    #                     validation_data=validation_generator,
+    #                     validation_steps=validation_steps,
+    #                     callbacks=callbacks_list,
+    #                     verbose=1)
+
+# Evaluate the skill of the model
 def evaluate(model, captions, videos, tokenizer, max_length):
     actual, predicted = list(), list()
     # step over the whole set
@@ -163,28 +186,46 @@ def evaluate(model, captions, videos, tokenizer, max_length):
     with open('results.txt', 'w+') as result_file:
         result_file.write(result_string)
 
+# Play videos and generate captions using pre-selected videos
+def demo(model, all_features, tokenizer, max_length):
+    validation_captions = load_captions('captions/validation_captions.json')
+    good_video_keys = ['6BrHPMdyVtU_1_10', '-_hbPLsZvvo_19_26', 'J_evFB7RIKA_104_120', 'Uc63MFVwfrs_355_372', 'aC-KOYQsIvU_25_31', 'Gn4Iv5ARIXc_83_93','0lh_UWF9ZP4_215_226', 'z2kUc8wp9l8_40_46']
+    for key in good_video_keys:
+        captions = validation_captions[key]
+        video_feature = all_features[key]
+        play_video('data/' + key + '.avi')
+        caption = generate_caption(model, tokenizer, video_feature, max_length)
 
-# test model against one video
+        print("="*47)
+        print('Generated caption: %s \n' % (caption))
+        print("="*47)
+
+        # Show ground-truth captions
+        print("="*47)
+        print("Ground truth captions:")
+        for caption in captions:
+            print(caption)
+        print("="*47)
+
+# Test model against one video
 def test(model, all_features, tokenizer, max_length):
-    # pre-define the max sequence length (from training)
-    # max_length = 50
-    # load one random video
-    video_name, video, captions = load_random_video_caption_pair(all_features)
+    # load one random (video_name, video_feature, caption)
+    video_name, video_feature, captions = load_random_video_caption_pair(all_features)
 
-    # play video
-    play_video(video_name)
+    play_video('data/' + video_name + '.avi')
 
-    # generate description
-    caption = generate_caption(model, tokenizer, video, max_length)
+    # Generate description
+    caption = generate_caption(model, tokenizer, video_feature, max_length)
+
     print("="*47)
     print('Generated caption: %s \n' % (caption))
     print("="*47)
 
+    # Show ground-truth captions
     print("="*47)
     print("Ground truth captions:")
     for caption in captions:
         print(caption)
-
     print("="*47)
 
 if __name__ == '__main__':
@@ -193,27 +234,63 @@ if __name__ == '__main__':
 
     # NOTE: We load features for all videos here, but the train/validation/test caption maps
     # will ensure to only select the allocated videos according the 70/20/10 split
-    all_features = load_features()
+    all_features_1 = load_features('video_features/video_features_first_16_frames.pkl')
+    all_features_2 = load_features('video_features/video_features_stride_2.pkl')
+    all_features_3 = load_features('video_features/video_features_stride_3.pkl')
+    all_features_4 = load_features('video_features/video_features_stride_4.pkl')
+    all_features_8 = load_features('video_features/video_features_stride_8.pkl')
+    all_features_10 = load_features('video_features/video_features_stride_10.pkl')
+    all_features_16 = load_features('video_features/video_features_stride_16.pkl')
 
-    training_captions = load_captions('training_captions.json')
-    test_captions = load_captions('test_captions.json')
-    validation_captions = load_captions('validation_captions.json')
+    training_captions = load_captions('captions/training_captions.json')
+    test_captions = load_captions('captions/test_captions.json')
+    validation_captions = load_captions('captions/validation_captions.json')
     tokenizer = preprocess_captions.create_tokenizer(training_captions)
     vocab_size = preprocess_captions.summarize_vocab(tokenizer)
     max_length = preprocess_captions.get_max_length(training_captions)
-    pretrained_model = load_pretrained_model('model_99.h5')
+
+    # Load model check points (NOTE: pretrained_model_3 for Stride 3 was the best performing in BLEU)
+    pretrained_model_1 = load_pretrained_model('model_checkpoints/model_99.h5')
+    pretrained_model_2 = load_pretrained_model('model_checkpoints/model_stride_2_99.h5')
+    pretrained_model_3 = load_pretrained_model('model_checkpoints/weights-improvement-stride_3-10-0.35.hdf5')
+    pretrained_model_4 = load_pretrained_model('model_checkpoints/weights-improvement-stride_4-17-0.35.hdf5')
+    pretrained_model_8 = load_pretrained_model('model_checkpoints/weights-improvement-stride_8-07-0.35.hdf5')
+    pretrained_model_10 = load_pretrained_model('model_checkpoints/weights-improvement-stride_10-21-0.35.hdf5')
+    pretrained_model_16 = load_pretrained_model('model_checkpoints/weights-improvement-stride_16-17-0.35.hdf5')
 
     args = parser.parse_args()
 
     if args.op == 'train':
         print('ALL SET FOR TRAINING ...')
-        train(vocab_size, training_captions, all_features, tokenizer, max_length)
+        train(vocab_size, training_captions, validation_captions, all_features_1, tokenizer, max_length)
     elif args.op == 'evaluate':
         # NOTE: Use validation set for fine-tuning and evaluation. Only use test set for final inference! - Willie Brink
         print('ALL SET FOR EVALUATING ...')
-        evaluate(pretrained_model, validation_captions, all_features, tokenizer, max_length)
+        print('Stride 1')
+        evaluate(pretrained_model_1, validation_captions, all_features_1, tokenizer, max_length)
+        print("="*20)
+        print('Stride 2')
+        evaluate(pretrained_model_2, validation_captions, all_features_2, tokenizer, max_length)
+        print("="*20)
+        print('Stride 3')
+        evaluate(pretrained_model_3, validation_captions, all_features_3, tokenizer, max_length)
+        print("="*20)
+        print('Stride 4')
+        evaluate(pretrained_model_4, validation_captions, all_features_4, tokenizer, max_length)
+        print("="*20)
+        print('Stride 8')
+        evaluate(pretrained_model_8, validation_captions, all_features_8, tokenizer, max_length)
+        print("="*20)
+        print('Stride 10')
+        evaluate(pretrained_model_10, validation_captions, all_features_10, tokenizer, max_length)
+        print("="*20)
+        print('Stride 16')
+        evaluate(pretrained_model_16, validation_captions, all_features_16, tokenizer, max_length)
     elif args.op == 'test':
         print('ALL SET FOR TESTING ...')
-        test(pretrained_model, all_features, tokenizer, max_length)
+        test(pretrained_model_3, all_features_3, tokenizer, max_length)
+    elif args.op == 'demo':
+        print('ALL SET FOR QUICK DEMO ...')
+        demo(pretrained_model_3, all_features_3, tokenizer, max_length)
     else:
         raise Exception('Choose valid operation: \'train\', \'evaluate\' or \'test\'')
