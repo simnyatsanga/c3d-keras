@@ -3,6 +3,7 @@ data/
 models/
 model_checkpoints/
 sports1m/
+glove.6B/
 *.png
 *.pyc
 *.proto
