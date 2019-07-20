@@ -356,7 +356,7 @@ def prepare_model_checkpoints(args, **kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--op', default='train')
+    parser.add_argument('--op', default='demo')
     parser.add_argument('--train_embedding', default='true')
     parser.add_argument('--use_pretrained_embedding', default='false')
     parser.add_argument('--use_finetuned_embedding', default='false')
