@@ -71,7 +71,7 @@ plac==0.9.6
 preshed==2.0.1
 prometheus-client==0.3.1
 prompt-toolkit==1.0.15
-protobuf==3.6.0
+protobuf==3.18.3
 ptyprocess==0.6.0
 pycoco==0.7.2
 pydot==1.2.4
